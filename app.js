@@ -14,11 +14,17 @@ function makeMixed(w, n, d) {
   return `<span class="mixed-num lk-mono"><span>${w}</span>${makeFrac(n, d)}</span>`;
 }
 
-// Свободный текст от Методиста: превращаем "7/4" в двухэтажную дробь.
-// Математику не трогаем — только отображение паттерна число/число.
-function formatFractions(text) {
+// Разметка текста от Методиста (мини-маркап). Математику не меняем — только вид.
+//   **акцент**  → смысловой акцент (фиолет, .lk-hl)   — макс 1–2 на блок
+//   `моно`      → математика моноширинным (.lk-mono)
+//   7/4         → двухэтажная дробь (автоматически)
+// Порядок: акцент → моно → дроби (дроби внутри акцента/моно тоже становятся красивыми).
+function fmtInline(text) {
   if (text == null) return '';
-  return String(text).replace(/(\d+)\/(\d+)/g, (_, n, d) => makeFrac(n, d));
+  return String(text)
+    .replace(/\*\*(.+?)\*\*/g, (_, s) => `<span class="lk-hl">${s}</span>`)
+    .replace(/`([^`]+)`/g,     (_, s) => `<span class="lk-mono">${s}</span>`)
+    .replace(/(\d+)\/(\d+)/g,  (_, n, d) => makeFrac(n, d));
 }
 
 // Разбор: массив строк или строка с \n → абзацы с воздухом между ними.
@@ -27,7 +33,7 @@ function renderFeedback(fb) {
   return parts
     .map(p => p.trim())
     .filter(Boolean)
-    .map(p => `<p class="fb-p">${formatFractions(p)}</p>`)
+    .map(p => `<p class="fb-p">${fmtInline(p)}</p>`)
     .join('');
 }
 
@@ -79,7 +85,7 @@ function showFinal() {
 function buildTrueFalse(task) {
   return task.items.map(item => `
     <div class="tf-item" id="tfi-${task.id}-${item.id}">
-      <div class="tf-text">${formatFractions(item.text)}</div>
+      <div class="tf-text">${fmtInline(item.text)}</div>
       <div class="tf-btns">
         <button class="tf-btn" data-task="${task.id}" data-item="${item.id}" data-val="true">Верно</button>
         <button class="tf-btn" data-task="${task.id}" data-item="${item.id}" data-val="false">Неверно</button>
@@ -329,11 +335,11 @@ function buildFindError(task) {
   const opts = task.options.map(o => `
     <button class="lk-opt" data-key="${o.key}">
       <span class="lk-key">${o.key}</span>
-      <span>${formatFractions(o.text)}</span>
+      <span>${fmtInline(o.text)}</span>
     </button>`).join('');
   return `
-    <div class="shown-work">${formatFractions(task.shown_work)}</div>
-    <div class="find-q">${formatFractions(task.question)}</div>
+    <div class="shown-work">${fmtInline(task.shown_work)}</div>
+    <div class="find-q">${fmtInline(task.question)}</div>
     <div class="lk-opts">${opts}</div>`;
 }
 
@@ -441,7 +447,7 @@ function buildTask(task) {
       </div>
       <span class="task-diff">${task.difficulty}</span>
     </div>
-    <p class="task-intro">${formatFractions(task.intro)}</p>
+    <p class="task-intro">${fmtInline(task.intro)}</p>
     <div class="task-body">${body}</div>
     <div class="task-feedback" id="fb-${task.id}">
       <div class="fb-label">Разбор</div>
